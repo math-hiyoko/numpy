@@ -5,7 +5,6 @@
 #include <Python.h>
 
 #include <algorithm>
-#include <complex>
 #include <cstring>
 #include <functional>
 #include <unordered_map>
