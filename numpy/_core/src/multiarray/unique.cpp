@@ -5,7 +5,6 @@
 #include <Python.h>
 
 #include <algorithm>
-#include <complex>
 #include <cstring>
 #include <functional>
 #include <unordered_map>
@@ -43,23 +42,20 @@ size_t hash_integer(const T *value, npy_bool equal_nan) {
 
 template <typename S, typename T, S (*real)(T), S (*imag)(T)>
 size_t hash_complex(const T *value, npy_bool equal_nan) {
-    std::complex<S> z = *reinterpret_cast<const std::complex<S> *>(value);
-    int hasnan = npy_isnan(z.real()) || npy_isnan(z.imag());
+    S value_real = real(*value);
+    S value_imag = imag(*value);
+    int hasnan = npy_isnan(value_real) || npy_isnan(value_imag);
     if (equal_nan && hasnan) {
         return 0;
     }
 
     // Now, equal_nan is false or neither of the values is not NaN.
     // So we don't need to worry about NaN here.
-    // Convert -0.0 to 0.0.
-    if (z.real() == 0.0) {
-        z.real(NPY_PZERO);
-    }
-    if (z.imag() == 0.0) {
-        z.imag(NPY_PZERO);
-    }
-
-    size_t hash = npy_fnv1a(reinterpret_cast<const unsigned char*>(&z), sizeof(z));
+    value_real = (value_real == NPY_NZERO) ? NPY_PZERO : value_real;
+    value_imag = (value_imag == NPY_NZERO) ? NPY_PZERO : value_imag;
+    S value_array[2] = {value_real, value_imag};
+    const unsigned char* value_bytes = reinterpret_cast<const unsigned char*>(value_array);
+    size_t hash = npy_fnv1a(value_bytes, sizeof(S) * 2);
 
     return hash;
 }
